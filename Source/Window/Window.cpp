@@ -1,8 +1,10 @@
 #include <GL/glew.h> 
 #define GLFW_INCLUDE_GLU
-#include "Window.h"
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "../Sabre3D/Sabre3Dstd.h"
+#include "Window.h"
 
 
 
@@ -20,7 +22,8 @@ void Window::Init()
 {
 	if (!glfwInit() == GL_TRUE)
 	{
-		fprintf(stderr, "Failed to initialize GLFW.");
+		S3D_FATAL("Failed to initialize GLFW");
+		// fprintf(stderr, "Failed to initialize GLFW.");
 		exit(EXIT_FAILURE);
 	}
 
@@ -31,7 +34,8 @@ void Window::Init()
 	// if window failed to create terminate.
 	if (!m_Window)
 	{
-		fprintf(stderr, "Error initializing window.");
+		S3D_FATAL("Error initializing window");
+		//fprintf(stderr, "Error initializing window.");
 		glfwTerminate();
 		exit(EXIT_FAILURE);
 	}

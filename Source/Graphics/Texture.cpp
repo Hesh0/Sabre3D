@@ -9,7 +9,6 @@ Texture::Texture(const std::string& fileName)
 	Load();
 }
 
-
 Texture::~Texture()
 {
 	glDeleteTextures(1, &m_TextureID);
@@ -17,7 +16,9 @@ Texture::~Texture()
 
 bool Texture::Load()
 {
-	BYTE* pixels = Utilities::LoadImage(m_FileName.c_str(), &m_Width, &m_Height);
+	unsigned int bitDepth;
+	
+	BYTE* pixels = Utilities::LoadImage(m_FileName.c_str(), &m_Width, &m_Height, &bitDepth);
 	
 	if (!pixels)
 	{
@@ -25,7 +26,7 @@ bool Texture::Load()
 		return false;
 	}
 
-	for (int i = 0; i < m_Width * m_Height; i++)
+	for (size_t i = 0; i < m_Width * m_Height; i++)
 	{
 		printf("%d ", pixels[i]);
 		if ((i + 1) % 3 == 0)

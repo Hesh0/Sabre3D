@@ -1,17 +1,21 @@
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
+#include "Sabre3Dstd.h"
 
+#include "../Debugging/Logger.h"
 #include "../Shader Handling/Shader.h"
 #include "../Window/Window.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/3D/Mesh.h"
 #include "../Graphics/Texture.h"
 
- 
 
-int main()
+
+ int main()
 {
+	// places _CrtDumpMemoryLeaks() at every exit point in the program.
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+
+	Logger::Init();
+	
 	Window window(1000, 1000 / 14 * 9, "Random");
 	Renderer renderer;
 	window.Init();
@@ -34,6 +38,7 @@ int main()
 		renderer.Render(triangleMesh);
 		window.Update();
 	}
+	Logger::Destroy();
 	_CrtDumpMemoryLeaks(); // this is supposed to report any memory leaks
 
 	return 0;

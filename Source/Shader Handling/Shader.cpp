@@ -1,5 +1,7 @@
-#include "Shader.h"
 #include <vector>
+
+#include "Shader.h"
+#include "../Sabre3D/Sabre3Dstd.h"
 
 
 
@@ -7,12 +9,12 @@
 Shader::Shader(const std::string& fileName, unsigned int numShaders, GLenum shaderTypes[])
 	: m_FileName{fileName}, m_NumShaders{numShaders}
 {
-	m_ShaderTypes = new GLenum[numShaders];
+	m_ShaderTypes = DBG_NEW GLenum[numShaders];
 	
 	for (size_t i = 0; i < numShaders; i++)
 		m_ShaderTypes[i] = shaderTypes[i];
 	
-	m_Shaders = new GLuint[numShaders];
+	m_Shaders = DBG_NEW GLuint[numShaders];
 	m_ProgramID = glCreateProgram();
 }
 
@@ -99,7 +101,6 @@ std::string Shader::LoadShader(std::string& fileName) const
 	
 	return "";
 }
-
 
 // over-arching error checking function with function pointer args to remove redundant code.
 bool Shader::CheckError(GLuint objectID, PFNGLGETSHADERIVPROC objectPropGetter, PFNGLGETSHADERINFOLOGPROC infoLogFunc, GLenum statusType) const
