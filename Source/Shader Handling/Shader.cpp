@@ -1,11 +1,10 @@
-#include <vector>
-
-#include "Shader.h"
+  #include "Shader.h"
 #include "../Sabre3D/Sabre3Dstd.h"
+#include "../Utilities/Utilities.h"
 
 
 
-// User passes in an array with the different shader types they're using, in the right order.
+// User passes in an array with the different shader types they're using, in the right order, might change to use bit flags.
 Shader::Shader(const std::string& fileName, unsigned int numShaders, GLenum shaderTypes[])
 	: m_FileName{fileName}, m_NumShaders{numShaders}
 {
@@ -69,9 +68,11 @@ void Shader::CreateProgram()
 	for (i = 0; i < m_NumShaders; i++)
 	{
 		m_Shaders[i] = CompileShader(m_ShaderTypes[i]);
-		if (!CheckShaderError(m_Shaders[i]))
+		if (!CheckShaderError(m_Shaders[i], shaderFileNames[i]));
 			glAttachShader(m_ProgramID, m_Shaders[i]);
 	}
+	glBindAttribLocation(m_ProgramID, 0, "position");
+	glBindAttribLocation(m_ProgramID, 1, "texCoord");
 	glLinkProgram(m_ProgramID);
 	if (CheckProgramError(m_ProgramID))
 		glDeleteProgram(m_ProgramID);
@@ -87,9 +88,10 @@ void Shader::Bind() const
 	glUseProgram(m_ProgramID);
 }
 
-std::string Shader::LoadShader(std::string& fileName) const
+std::string Shader::LoadShader(const std::string& fileName) 
 {
 	std::ifstream shaderFile{fileName};
+	shaderFileNames.push_back(fileName);
 
 	if (shaderFile)
 	{
@@ -97,13 +99,13 @@ std::string Shader::LoadShader(std::string& fileName) const
 		std::string contents((std::istreambuf_iterator<char>(shaderFile)), (std::istreambuf_iterator<char>()));
 		return contents;
 	}
-	fprintf(stderr, "Error loading file: %s\n", fileName.c_str());
+	S3D_LOG("WARNING", "Could not load shader " + fileName);
 	
 	return "";
 }
 
 // over-arching error checking function with function pointer args to remove redundant code.
-bool Shader::CheckError(GLuint objectID, PFNGLGETSHADERIVPROC objectPropGetter, PFNGLGETSHADERINFOLOGPROC infoLogFunc, GLenum statusType) const
+bool Shader::CheckError(bool isShader, const std::string& file, GLuint objectID, PFNGLGETSHADERIVPROC objectPropGetter, PFNGLGETSHADERINFOLOGPROC infoLogFunc, GLenum statusType) const
 {
 	GLint status;
 	// check if shader compiled or program linked successfully.
@@ -115,20 +117,25 @@ bool Shader::CheckError(GLuint objectID, PFNGLGETSHADERIVPROC objectPropGetter, 
 		objectPropGetter(objectID, GL_INFO_LOG_LENGTH, &infoLogLength);
 		std::vector<GLchar> infoLog(infoLogLength);
 		infoLogFunc(objectID, infoLogLength, &infoLogLength, &infoLog[0]);
-		// TODO write this to the log file as well.
-		fprintf(stderr, "%s\n", &infoLog[0]);
+		Utilities::StripNewline(&infoLog[0]);
+		std::string s(&infoLog[0]);
+		if (isShader)
+			S3D_LOG("WARNING", s + "in " + file);
+		else
+			S3D_LOG("WARNING", s + " Program " + m_FileName);
+		
 		return true;
 	}
 	
 	return false;
 }
 
-bool Shader::CheckShaderError(GLuint shaderID) const
+bool Shader::CheckShaderError(GLuint shaderID, const std::string file) const
 {
-	return CheckError(shaderID, glGetShaderiv, glGetShaderInfoLog, GL_COMPILE_STATUS);
+	return CheckError(true, file, shaderID, glGetShaderiv, glGetShaderInfoLog, GL_COMPILE_STATUS);
 }
 
 bool Shader::CheckProgramError(GLuint programID) const
 {
-	return CheckError(programID, glGetProgramiv, glGetProgramInfoLog, GL_LINK_STATUS);
+	return CheckError(false, "", programID, glGetProgramiv, glGetProgramInfoLog, GL_LINK_STATUS);
 }

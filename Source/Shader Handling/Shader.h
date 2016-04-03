@@ -2,8 +2,10 @@
 
 #include <GL/glew.h>
 #include <fstream>
-#include <iostream>
-#include <string>
+
+#include "../Sabre3D/Sabre3Dstd.h"
+
+
 
 class Shader 
 {
@@ -13,6 +15,7 @@ class Shader
 	GLuint m_ShaderID;
 	GLenum* m_ShaderTypes;
 	GLuint* m_Shaders;
+	std::vector<std::string> shaderFileNames;
 
 public: 
 	Shader(const std::string& fileName, unsigned int numShaders, GLenum shaderTypes[]);
@@ -23,9 +26,9 @@ public:
 private:
 	Shader(const Shader& other);
 	void operator=(const Shader& other){}
-	std::string LoadShader(std::string& fileName) const;
-	bool CheckError(GLuint shaderID, PFNGLGETSHADERIVPROC objectPropGetter, PFNGLGETSHADERINFOLOGPROC infoLogFunc, GLenum status) const;
-	bool CheckShaderError(GLuint shaderID) const;
+	std::string LoadShader(const std::string& fileName);
+	bool Shader::CheckError(bool isShader, const std::string& file, GLuint objectID, PFNGLGETSHADERIVPROC objectPropGetter, PFNGLGETSHADERINFOLOGPROC infoLogFunc, GLenum statusType) const;
+	bool CheckShaderError(GLuint shaderID, const std::string associatedFileName) const;
 	bool CheckProgramError(GLuint programID) const;
 	GLuint CompileShader(GLenum shaderType);
 };

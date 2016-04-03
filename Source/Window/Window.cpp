@@ -1,8 +1,4 @@
 #include <GL/glew.h> 
-#define GLFW_INCLUDE_GLU
-#include <stdio.h>
-#include <stdlib.h>
-
 #include "../Sabre3D/Sabre3Dstd.h"
 #include "Window.h"
 
@@ -21,12 +17,8 @@ Window::~Window()
 void Window::Init() 
 {
 	if (!glfwInit() == GL_TRUE)
-	{
 		S3D_FATAL("Failed to initialize GLFW");
-		// fprintf(stderr, "Failed to initialize GLFW.");
-		exit(EXIT_FAILURE);
-	}
-
+		
 	// set some hints before creating the window.
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	
@@ -34,26 +26,21 @@ void Window::Init()
 	// if window failed to create terminate.
 	if (!m_Window)
 	{
-		S3D_FATAL("Error initializing window");
-		//fprintf(stderr, "Error initializing window.");
 		glfwTerminate();
-		exit(EXIT_FAILURE);
+		S3D_FATAL("Error initializing window");
 	}
 	glfwMakeContextCurrent(m_Window);
 	glewExperimental = GL_TRUE;
 	
 	if (glewInit() != GLEW_OK)
-	{
-		fprintf(stderr, "Error Initializing glew.");
-		exit(EXIT_FAILURE);
-	}
+		S3D_FATAL("Error Initializing glew.");
 }
 
 void Window::Clear() const
 {
 	const GLfloat red[] = { 1.0f, 0.0f, 0.0f, 1.0f };
-	glClearBufferfv(GL_COLOR, 0, red);
-	// glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER);
+	// glClearBufferfv(GL_COLOR, 0, red);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER);
 }
 
 void Window::Update() const
@@ -62,7 +49,7 @@ void Window::Update() const
 	glfwPollEvents();
 }
 
-bool Window::ShouldClose() const
+int Window::ShouldClose() const
 {
 	return glfwWindowShouldClose(m_Window);
 }

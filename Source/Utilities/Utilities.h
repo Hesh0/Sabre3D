@@ -5,5 +5,6 @@
 #include <GL/glew.h>
 
 namespace Utilities {
-	 BYTE* LoadImage(const char* fileName, unsigned int* width, unsigned int* height, unsigned int* bitDepth);
+	void StripNewline(char* str);
+	BYTE* LoadImage(const char* fileName, unsigned int* width, unsigned int* height, unsigned int* bitDepth);
 }

@@ -1,7 +1,10 @@
-#include <Windows.h>
+//#include <Windows.h>
+#define _AFXDLL
+#include <afxmt.h>
 #include <cstring>
 
 #include "Logger.h"
+#include "../Utilities/Utilities.h"
 
 #pragma region Constants and Globals
 
@@ -9,19 +12,19 @@
 
 // display flags.
 #ifndef NDEBUG
-	const unsigned char ERROR_FLAG_DEFAULT = (WRITE_TO_DEBUGGER | WRITE_TO_LOG_FILE);
-	const unsigned char WARNING_FLAG_DEFAULT = (WRITE_TO_DEBUGGER | WRITE_TO_LOG_FILE);
-	const unsigned char LOG_FLAG_DEFAULT = (WRITE_TO_DEBUGGER | WRITE_TO_LOG_FILE);
+	const unsigned char DEFAULT_ERROR_FLAG = (WRITE_TO_DEBUGGER | WRITE_TO_LOG_FILE);
+	const unsigned char DEFAULT_WARNING_FLAG = (WRITE_TO_DEBUGGER | WRITE_TO_LOG_FILE);
+	const unsigned char DEFAULT_LOG_FLAG = (WRITE_TO_DEBUGGER | WRITE_TO_LOG_FILE);
 
 #elif NDEBUG
-	const unsigned char ERROR_FLAG_DEFAULT = (WRITE_TO_LOG_FILE);
-	const unsigned char WARNING_FLAG_DEFAULT = (WRITE_TO_LOG_FILE);
-	const unsigned char LOG_FLAG_DEFAULT = (WRITE_TO_LOG_FILE);
+	const unsigned char DEFAULT_ERROR_FLAG = (WRITE_TO_LOG_FILE);
+	const unsigned char DEFAULT_WARNING_FLAG = (WRITE_TO_LOG_FILE);
+	const unsigned char DEFAULT_LOG_FLAG = (WRITE_TO_LOG_FILE);
 
 #else
-	const unsigned char ERROR_FLAG_DEFAULT = 0x0;
-	const unsigned char WARNING_FLAG_DEFAULT = 0x0;
-	const unsigned char LOG_FLAG_DEFAULT = 0x0;
+	const unsigned char DEFAULT_ERROR_FLAG = 0x0;
+	const unsigned char DEFAULT_WARNING_FLAG = 0x0;
+	const unsigned char DEFAULT_LOG_FLAG = 0x0;
 
 #endif
 
@@ -36,6 +39,9 @@ static LogManager* s_pLogManager{nullptr};
 
 class LogManager
 {
+	// for thread synchronization.
+	CCriticalSection m_CritSection;
+	
 	typedef std::map<std::string, unsigned char> Tags;
 	typedef std::list<Logger::ErrorMessenger*> ErrorMessengerList;
 
@@ -45,9 +51,9 @@ class LogManager
 public:
 	enum ErrorDialogResult
 	{
-		ERROR_ABORT,
-		ERROR_RETRY_,
-		ERROR_IGNORE
+		ERROR_DIALOG_ABORT,
+		ERROR_DIALOG_RETRY,
+		ERROR_DIALOG_IGNORE
 	};
 
 public:
@@ -62,31 +68,34 @@ private:
 	void WriteToLogFile(const std::string msg);
 	void GetOutputBuffer(std::string& buffer, const std::string& tag, const std::string& msg, const char* funcName, const char* fileName, unsigned int lineNum);
 	void OutputBufferToLogs(const std::string& buffer, unsigned char flags);
-
 };
+
 #pragma endregion
 
 #pragma region LogManager Definition
 
 LogManager::LogManager()
 {
-	SetDisplayFlags("INFO", LOG_FLAG_DEFAULT);
-	SetDisplayFlags("WARNING", WARNING_FLAG_DEFAULT);
-	SetDisplayFlags("ERROR", ERROR_FLAG_DEFAULT);
-
+	SetDisplayFlags("INFO", DEFAULT_LOG_FLAG);
+	SetDisplayFlags("WARNING", DEFAULT_WARNING_FLAG);
+	SetDisplayFlags("ERROR", DEFAULT_ERROR_FLAG);
 }
+
 LogManager::~LogManager()
 {
+	m_CritSection.Lock();
 	for (auto it = m_errorMessengers.begin(); it != m_errorMessengers.end(); it++)
 	{
 		Logger::ErrorMessenger* messenger = (*it);
 		delete messenger;
 	}
 	m_errorMessengers.clear();
+	m_CritSection.Unlock();
 }
 
 void LogManager::SetDisplayFlags(const std::string& tag, unsigned char flag)
 {
+	m_CritSection.Lock();
 	if (flag != 0)
 	{
 		Tags::iterator findIt = m_Tags.find(tag);
@@ -97,10 +106,12 @@ void LogManager::SetDisplayFlags(const std::string& tag, unsigned char flag)
 	}
 	else
 		m_Tags.erase(tag);
+	m_CritSection.Unlock();
 }
 
 void LogManager::Log(const std::string& tag, const std::string& msg, const char* funcName, const char* fileName, unsigned int lineNum) 
 {
+	m_CritSection.Lock();
 	Tags::iterator findIt = m_Tags.find(tag);
 	if (findIt != m_Tags.end())
 	{
@@ -108,42 +119,51 @@ void LogManager::Log(const std::string& tag, const std::string& msg, const char*
 		GetOutputBuffer(buffer, tag, msg, funcName, fileName, lineNum);
 		OutputBufferToLogs(buffer, findIt->second);
 	}
+	m_CritSection.Unlock();
 }
 
 void LogManager::AddErrorMessenger(Logger::ErrorMessenger* messenger) 
 {
-	S3D_ASSERT(messenger)
+	m_CritSection.Lock();
+	S3D_ASSERT(messenger);
 	m_errorMessengers.push_back(messenger);
+	m_CritSection.Unlock();
 }
 
 LogManager::ErrorDialogResult LogManager::Error(const std::string& msg, bool isFatal, const char* funcName, const char* fileName, unsigned int lineNum)
 {
 	std::string tag = ((isFatal) ? "FATAL" : "ERROR");
-
 	std::string buffer;
 
 	GetOutputBuffer(buffer, tag, msg, funcName, fileName, lineNum);
+	
+	m_CritSection.Lock();
 	Tags::iterator findIt = m_Tags.find(tag);
 	if (findIt != m_Tags.end())
-	{
 		OutputBufferToLogs(buffer, findIt->second);
-	}
-
+	m_CritSection.Unlock();
+	
+	int result;
+	
 	// show dialog box
-
-	int result = MessageBox(nullptr, buffer.c_str(), tag.c_str(), MB_ABORTRETRYIGNORE | MB_ICONERROR | MB_DEFBUTTON3);
+	if (isFatal)
+		result = MessageBox(nullptr, buffer.c_str(), tag.c_str(), MB_OK | MB_ICONERROR | MB_DEFBUTTON1);
+	else
+		result = MessageBox(nullptr, buffer.c_str(), tag.c_str(), MB_ABORTRETRYIGNORE | MB_ICONERROR | MB_DEFBUTTON3);
 
 	switch (result)
 	{
+		case IDOK:
+			exit(EXIT_FAILURE);
 		case IDIGNORE:
-			return LogManager::ERROR_IGNORE;
+			return LogManager::ERROR_DIALOG_IGNORE;
 		case IDABORT:
 			__debugbreak(); // assembly instruction to open VS debugger.
-			return LogManager::ERROR_ABORT;
+			return LogManager::ERROR_DIALOG_ABORT;
 		case IDRETRY:
-			return LogManager::ERROR_RETRY_;
+			return LogManager::ERROR_DIALOG_RETRY;
 		default:
-			return LogManager::ERROR_RETRY_;
+			return LogManager::ERROR_DIALOG_RETRY;
 	}
 }
 
@@ -165,12 +185,13 @@ void LogManager::GetOutputBuffer(std::string& buffer, const std::string& tag, co
 	time_t now = time(nullptr);
 	char dateBuffer[32];
 	ctime_s(dateBuffer, sizeof dateBuffer, &now);
+	Utilities::StripNewline(dateBuffer);
 	std::string date(dateBuffer);
 
-	buffer = "[" + date + "]";
+	buffer = "[" + date + "] ";
 	
 	if (!tag.empty())
-		buffer += tag + "-" + msg;
+		buffer += tag + "- " + msg;
 	else
 		buffer += msg;
 	
@@ -191,9 +212,8 @@ void LogManager::GetOutputBuffer(std::string& buffer, const std::string& tag, co
 		buffer += "\nLine: ";
 		char lineNumBuffer[11];
 		memset(lineNumBuffer, 0, sizeof(char));
-		buffer += _itoa(lineNum, lineNumBuffer, 10);
+		buffer += _itoa_s(lineNum, lineNumBuffer, 10);
 	}
-
 	buffer += "\n";
 }
 
@@ -216,14 +236,11 @@ Logger::ErrorMessenger::ErrorMessenger()
 	s_pLogManager->AddErrorMessenger(this);
 }
 
-Logger::ErrorMessenger::~ErrorMessenger()
-{}
-
 void Logger::ErrorMessenger::Show(const std::string& msg, bool isFatal, const char* funcName, const char* fileName, unsigned int lineNum)
 {
 	if (!m_ErrorIgnored)
 	{
-		if (s_pLogManager->Error(msg, isFatal, funcName, fileName, lineNum) == LogManager::ERROR_IGNORE)
+		if (s_pLogManager->Error(msg, isFatal, funcName, fileName, lineNum) == LogManager::ERROR_DIALOG_IGNORE)
 			m_ErrorIgnored = true;
 	}
 }
@@ -240,13 +257,14 @@ namespace Logger {
 		fopen_s(&file, LOG_FILE, "w");
 		if (!file)
 		{
-			fprintf(stderr, "Could not open log file %s\n", LOG_FILE);
+			// fprintf(stderr, "Could not open log file %s\n", LOG_FILE);
 			return false;
 		}
 		time_t now = time(nullptr);
 		char date[32];
 		ctime_s(date, sizeof date, &now);
-		fprintf_s(file, "[%s]Log file %s opened for writing\n", date, LOG_FILE);
+		Utilities::StripNewline(date);
+		fprintf_s(file, "[%s] INFO- Log file %s opened for writing\n", date, LOG_FILE);
 		fclose(file);
 
 		return true;
@@ -265,7 +283,7 @@ namespace Logger {
 		s_pLogManager = nullptr;
 	}
 	
-	void Log(std::string& tag, const std::string& msg, const char* funcName, const char* fileName, unsigned int lineNum)
+	void Log(const std::string& tag, const std::string& msg, const char* funcName, const char* fileName, unsigned int lineNum)
 	{
 		S3D_ASSERT(s_pLogManager);
 		s_pLogManager->Log(tag, msg, funcName, fileName, lineNum);
@@ -273,8 +291,3 @@ namespace Logger {
 }
 
 #pragma endregion
-
-
-
-
-

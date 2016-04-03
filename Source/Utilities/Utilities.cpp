@@ -1,9 +1,17 @@
 #include "Utilities.h"
+#include <cstring>
 
 
 
 namespace Utilities {
-
+	
+	void StripNewline(char* str)
+	{
+		char* newLine = strchr(str, '\n');
+		if (newLine)
+			*newLine = '\0';
+	}
+	
 	BYTE* LoadImage(const char* fileName, unsigned int* width, unsigned int* height, unsigned int* bitDepth)
 	{
 		// image format.

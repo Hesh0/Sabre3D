@@ -16,7 +16,7 @@ public:
 	void Init();
 	void Clear() const;
 	void Update() const;
-	bool ShouldClose() const;
+	int ShouldClose() const;
 };
 
  

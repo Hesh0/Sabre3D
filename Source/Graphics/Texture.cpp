@@ -17,33 +17,47 @@ Texture::~Texture()
 bool Texture::Load()
 {
 	unsigned int bitDepth;
+	// pixel data format.
+	GLenum format;
 	
 	BYTE* pixels = Utilities::LoadImage(m_FileName.c_str(), &m_Width, &m_Height, &bitDepth);
 	
 	if (!pixels)
 	{
-		fprintf(stderr, "Unable to load image from file: %s\n", m_FileName.c_str());
+		S3D_LOG("WARNING", "Unable to load image from file" + m_FileName);
 		return false;
 	}
 
-	for (size_t i = 0; i < m_Width * m_Height; i++)
+	printf("Bitdepth: %d\n", bitDepth);
+
+	switch (bitDepth)
+	{
+		case 16:
+			format = GL_BGR;
+			break;
+		case 24:
+			format = GL_BGR;
+			break;
+		default:
+			format = GL_RGB;
+	}
+
+	/* for (size_t i = 0; i < m_Width * m_Height; i++)
 	{
 		printf("%d ", pixels[i]);
 		if ((i + 1) % 3 == 0)
 			printf("\n");
-	}
+	} */
 	
 	glGenTextures(1, &m_TextureID);
 	glBindTexture(GL_TEXTURE_2D, m_TextureID); 
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	// glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	// glTextureParameteri(m_TextureID, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, m_Width, m_Height, 0, GL_RGB, GL_UNSIGNED_BYTE, pixels);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_Width, m_Height, 0, format, GL_UNSIGNED_BYTE, pixels);
 
 	return true;
 }
