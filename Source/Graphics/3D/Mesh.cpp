@@ -4,9 +4,27 @@
 
 
 
-Mesh::Mesh(float * positions, float * texCoords, int * indices, size_t posSize, size_t texCoordsSize, size_t indicesSize)
+Mesh::Mesh(float* positions, size_t posSize) : m_NumVertices{posSize / 3} 
+{
+
+	glGenVertexArrays(1, &m_VAO);
+	glBindVertexArray(m_VAO);
+
+	glGenBuffers(1, m_VBOs);
+	glBindBuffer(GL_ARRAY_BUFFER, m_VBOs[0]);
+
+	// make VBO 1 have the position data for the mesh.
+	glBufferData(GL_ARRAY_BUFFER, posSize * sizeof(float), positions, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+	glEnableVertexAttribArray(0);
+
+	glBindVertexArray(0);
+}
+
+Mesh::Mesh(float* positions, float* texCoords, int* indices, size_t posSize, size_t texCoordsSize, size_t indicesSize)
 	: m_NumVertices{posSize / 3}
 {
+	// A VAO holds VBO i think.
 	glGenVertexArrays(1, &m_VAO);
 	glBindVertexArray(m_VAO);
 

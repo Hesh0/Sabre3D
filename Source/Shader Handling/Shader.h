@@ -9,7 +9,9 @@
 
 class Shader 
 {
-	const std::string& m_FileName;
+	const int CREATION_ERROR = -1;
+	
+	const std::string m_FileName;
 	unsigned int m_NumShaders;
 	GLuint m_ProgramID;
 	GLuint m_ShaderID;
@@ -18,7 +20,7 @@ class Shader
 	std::vector<std::string> shaderFileNames;
 
 public: 
-	Shader(const std::string& fileName, unsigned int numShaders, GLenum shaderTypes[]);
+	Shader(const std::string fileName, GLenum shaderTypes[], unsigned int numShaders);
 	~Shader();
 	void CreateProgram();
 	void Bind() const;
@@ -26,6 +28,7 @@ public:
 private:
 	Shader(const Shader& other);
 	void operator=(const Shader& other){}
+	bool Init(unsigned int numShaders, GLenum shaderTypes[]);
 	std::string LoadShader(const std::string& fileName);
 	bool Shader::CheckError(bool isShader, const std::string& file, GLuint objectID, PFNGLGETSHADERIVPROC objectPropGetter, PFNGLGETSHADERINFOLOGPROC infoLogFunc, GLenum statusType) const;
 	bool CheckShaderError(GLuint shaderID, const std::string associatedFileName) const;

@@ -1,4 +1,5 @@
 #include "Texture.h"
+#include "../Utilities/Utilities.h"
 #include "../Debugging/Logger.h"
 
 
@@ -48,7 +49,8 @@ bool Texture::Load()
 		if ((i + 1) % 3 == 0)
 			printf("\n");
 	} */
-	
+
+#if defined(OPENGLCONTEXT)
 	glGenTextures(1, &m_TextureID);
 	glBindTexture(GL_TEXTURE_2D, m_TextureID); 
 
@@ -58,6 +60,7 @@ bool Texture::Load()
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, m_Width, m_Height, 0, format, GL_UNSIGNED_BYTE, pixels);
+#endif // OPENGLCONTEXT
 
 	return true;
 }

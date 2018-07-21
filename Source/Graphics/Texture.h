@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../Utilities/Utilities.h"
 #include <GL/glew.h>
 #include <string>
 

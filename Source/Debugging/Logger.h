@@ -17,7 +17,7 @@ namespace Logger {
 	public:
 		ErrorMessenger();
 		~ErrorMessenger() {}
-		void Show(const std::string& msg, bool isFatal, const char* funcName, const char* fileName, unsigned int lineNum);
+		void Loop(const std::string& msg, bool isFatal, const char* funcName, const char* fileName, unsigned int lineNum);
 	};
 	
 	bool RestartLogFile();
@@ -34,7 +34,7 @@ namespace Logger {
 	{ \
 		static Logger::ErrorMessenger* errorMessenger = DBG_NEW Logger::ErrorMessenger; \
 		std::string s((str)); \
-		errorMessenger->Show(s, true, __FUNCTION__, __FILE__, __LINE__); \
+		errorMessenger->Loop(s, true, __FUNCTION__, __FILE__, __LINE__); \
 	} \
 	while (0) 
 
@@ -45,7 +45,7 @@ namespace Logger {
 		{ \
 			static Logger::ErrorMessenger* errorMessenger = DBG_NEW Logger::ErrorMessenger; \
 			std::string s((str)); \
-			errorMessenger->Show(s, false, __FUNCTION__, __FILE__, __LINE__); \
+			errorMessenger->Loop(s, false, __FUNCTION__, __FILE__, __LINE__); \
 		} \
 		while (0)
 	
@@ -71,7 +71,7 @@ namespace Logger {
 			{ \
 				static Logger::ErrorMessenger* errorMessenger = DBG_NEW Logger::ErrorMessenger; \
 				std::string s("ASSERTION FAILED: "); \
-				errorMessenger->Show(s, false, __FUNCTION__, __FILE__, __LINE__); \
+				errorMessenger->Loop(s, false, __FUNCTION__, __FILE__, __LINE__); \
 			} \
 		} while (0) 
 

@@ -8,7 +8,7 @@
 
 #pragma region Constants and Globals
 
-#define LOG_FILE "Sabre3D.log"
+const char* const LOG_FILE = "Sabre3D.log";
 
 // display flags.
 #ifndef NDEBUG
@@ -158,7 +158,7 @@ LogManager::ErrorDialogResult LogManager::Error(const std::string& msg, bool isF
 		case IDIGNORE:
 			return LogManager::ERROR_DIALOG_IGNORE;
 		case IDABORT:
-			__debugbreak(); // assembly instruction to open VS debugger.
+			__debugbreak(); // Assembly instruction to open VS debugger.
 			return LogManager::ERROR_DIALOG_ABORT;
 		case IDRETRY:
 			return LogManager::ERROR_DIALOG_RETRY;
@@ -191,7 +191,7 @@ void LogManager::GetOutputBuffer(std::string& buffer, const std::string& tag, co
 	buffer = "[" + date + "] ";
 	
 	if (!tag.empty())
-		buffer += tag + "- " + msg;
+		buffer += tag + ": " + msg;
 	else
 		buffer += msg;
 	
@@ -236,7 +236,7 @@ Logger::ErrorMessenger::ErrorMessenger()
 	s_pLogManager->AddErrorMessenger(this);
 }
 
-void Logger::ErrorMessenger::Show(const std::string& msg, bool isFatal, const char* funcName, const char* fileName, unsigned int lineNum)
+void Logger::ErrorMessenger::Loop(const std::string& msg, bool isFatal, const char* funcName, const char* fileName, unsigned int lineNum)
 {
 	if (!m_ErrorIgnored)
 	{
@@ -264,7 +264,7 @@ namespace Logger {
 		char date[32];
 		ctime_s(date, sizeof date, &now);
 		Utilities::StripNewline(date);
-		fprintf_s(file, "[%s] INFO- Log file %s opened for writing\n", date, LOG_FILE);
+		fprintf_s(file, "[%s] INFO: Log file %s opened for writing\n", date, LOG_FILE);
 		fclose(file);
 
 		return true;

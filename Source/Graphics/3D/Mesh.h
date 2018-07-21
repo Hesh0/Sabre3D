@@ -20,6 +20,7 @@ class Mesh
 	unsigned int m_NumVertices;
 
 public:
+	Mesh(float* positions, size_t posSize);
 	Mesh(float* positions, float* texCoords, int* indices, size_t posSize, size_t texCoordsSize, size_t indicesSize);
 	virtual ~Mesh();
 	inline GLuint getVAO() const {return m_VAO;}
